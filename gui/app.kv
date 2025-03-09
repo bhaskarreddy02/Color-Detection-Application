@@ -1,0 +1,54 @@
+<MainScreen>:
+    name: "main"
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: (1, 1, 1, 1)  # White background
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        Label:
+            text: "Color Blind Pal"
+            font_size: 30
+            color: (0, 0, 0, 1)  # Black text
+        Button:
+            text: "Live Camera Mode"
+            on_press: app.root.current = "camera"
+        Button:
+            text: "Upload Image Mode"
+            on_press: app.root.current = "upload"
+
+<CameraScreen>:
+    name: "camera"
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: (0, 1, 0, 1)  # Green background
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        Label:
+            text: "Live Camera Mode"
+            font_size: 20
+        Button:
+            text: "Back to Main"
+            on_press: app.root.current = "main"
+
+<UploadScreen>:
+    name: "upload"
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: (0, 0, 1, 1)  # Blue background
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        Label:
+            text: "Upload Image Mode"
+            font_size: 20
+        Button:
+            text: "Back to Main"
+            on_press: app.root.current = "main"
