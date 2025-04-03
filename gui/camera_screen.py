@@ -5,6 +5,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.image import Image
 import cv2
+import numpy as np
 from app.color_detection import get_closest_color
 
 class CameraScreen(Screen):
@@ -33,6 +34,11 @@ class CameraScreen(Screen):
 
         self.layout.add_widget(self.button_layout)
 
+        # Color Blindness Filter Toggle Button
+        self.filter_button = Button(text="Toggle Filter", font_size=20, size_hint=(1, 0.2))
+        self.filter_button.bind(on_press=self.toggle_filter)
+        self.layout.add_widget(self.filter_button)
+
         # Back button
         self.back_button = Button(text="Back to Main", font_size=20, size_hint=(1, 0.2))
         self.back_button.bind(on_press=self.stop_camera)
@@ -43,6 +49,7 @@ class CameraScreen(Screen):
         # Capture control
         self.capture = None
         self.is_paused = False
+        self.filter_mode = "normal"
 
     def on_enter(self):
         self.capture = cv2.VideoCapture(0)
@@ -56,6 +63,9 @@ class CameraScreen(Screen):
         ret, frame = self.capture.read()
         if ret:
             frame = cv2.flip(frame, -1)
+
+            # Apply Color Blindness Filter
+            frame = self.apply_filter(frame)
 
             # Get the center pixel
             height, width, _ = frame.shape
@@ -81,12 +91,10 @@ class CameraScreen(Screen):
     def capture_frame(self, instance):
         # Pause live updates
         self.is_paused = True
-        # print("Live feed paused! Frame captured.")
 
     def resume_feed(self, instance):
         # Resume live updates
         self.is_paused = False
-        # print("Resuming live feed...")
 
     def stop_camera(self, instance):
         # Stop the camera updates and release the resource
@@ -99,6 +107,26 @@ class CameraScreen(Screen):
         # Ensure resources are released properly when leaving the screen
         if hasattr(self, 'capture') and self.capture.isOpened():
             self.capture.release()
-
         Clock.unschedule(self.update)
 
+    def toggle_filter(self, instance):
+        filters = ["normal", "protanopia", "deuteranopia", "tritanopia", "achromatopsia"]
+        current_index = filters.index(self.filter_mode)
+        self.filter_mode = filters[(current_index + 1) % len(filters)]
+        self.filter_button.text = f"Filter: {self.filter_mode.capitalize()}"
+
+    def apply_filter(self, frame):
+        if self.filter_mode == "normal":
+            return frame
+        
+        # Define transformation matrices
+        matrices = {
+            "protanopia": np.array([[0.567, 0.433, 0], [0.558, 0.442, 0], [0, 0.242, 0.758]]),
+            "deuteranopia": np.array([[0.625, 0.375, 0], [0.7, 0.3, 0], [0, 0.3, 0.7]]),
+            "tritanopia": np.array([[0.95, 0.05, 0], [0, 0.433, 0.567], [0, 0.475, 0.525]]),
+            "achromatopsia": np.array([[0.299, 0.587, 0.114], [0.299, 0.587, 0.114], [0.299, 0.587, 0.114]])
+        }
+
+        matrix = matrices.get(self.filter_mode, np.eye(3))
+        transformed = cv2.transform(frame, matrix)
+        return np.clip(transformed, 0, 255).astype(np.uint8)
